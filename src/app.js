@@ -2,11 +2,12 @@ import React, { Component } from 'react'
 import * as firebase from 'firebase'
 import { View, StyleSheet } from 'react-native'
 import Login from './components/login'
-import { TabNavigator } from 'react-navigation'
+import { TabNavigator, StackNavigator } from 'react-navigation'
 import Home from './components/home'
 import RecipeList from './components/recipeList'
 import RecipesStore from './store/recipesStore'
 import Settings from './components/settings'
+import Recipe from './components/recipe'
 import AuthStore from './store/authStore'
 import { observer } from "mobx-react"
 
@@ -20,12 +21,20 @@ const firebaseConfig = {
 @observer
 class App extends Component {
 
-	authStore = new AuthStore()
-	recipesStore = new RecipesStore()
+	authStore = AuthStore.getInstance()
+	recipesStore = RecipesStore.getInstance()
+
+	recipesNavigator = StackNavigator({
+		RecipeList: { screen: (props) => (<RecipeList {...props.navigation.state.params} navigation={props.navigation} recipesStore={this.recipesStore} />) },
+		Recipe: {
+			screen: (props) => (<Recipe navigation={props.navigation} {...props.navigation.state.params} recipesStore={this.recipesStore} />),
+			path: '/recipe/:recipeKey'
+		},
+	})
 
 	RoutedApp = TabNavigator({
 		Home: { screen: Home },
-		RecipeList: { screen: (props) => (<RecipeList {...props.navigation.state.params} recipesStore={this.recipesStore} />) },
+		RecipeList: { screen: this.recipesNavigator },
 		Settings: { screen: (props) => (<Settings authStore={this.authStore} />) }
 	}, {
 		tabBarPosition: 'bottom',

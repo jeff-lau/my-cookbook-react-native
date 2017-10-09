@@ -1,13 +1,13 @@
-import { observable } from 'mobx'
+import mobx, { observable, action } from 'mobx'
+import * as firebase from 'firebase'
+import AuthStore from './authStore'
 
-class recipesStore {
-	@observable recipes = [
-		{
-			key: '-Kv651BDzbLgaI-39oTu',
-			imageURL: 'https://firebasestorage.googleapis.com/v0/b/my-cookbook-a5536.appspot.com/o/images%2FQc2CXfqbCQNEzUm1JQAWCPiosw03%2F918470a9-0a89-4737-825d-991aa8041964%2F547e2c66-654f-4cfd-9d60-44b8539f8b70?alt=media&token=e7f689d1-8a30-479e-b1f2-3370745e102c',
-			dishName: 'Pineapple Prawn Salad'
-		}
-	]
+mobx.useStrict(true)
+
+var instance = null
+class RecipesStore {
+	@observable recipes = new Map()
+	@observable selectedRecipe = {}
 
 	addRecipe(key, recipe) {
 		this.recipes[key] = recipe
@@ -17,10 +17,50 @@ class recipesStore {
 		return this.recipes
 	}
 
-	loadRecipesFromFireBase() {
+	@action.bound
+	_loadRecipeSuccess(snapshots, recipeKeys) {
+		snapshots.forEach((snapshot, index) => (this.recipes.set(recipeKeys[index], { ...snapshot.val(), recipeKey: recipeKeys[index] })))
+	}
 
+	@action.bound
+	loadRecipeSummaries() {
+		try {
+			const db = firebase.database()
+			const { uid } = AuthStore.getInstance().authDetails.data
+			db.ref(`users`).child(uid).once('value').then(snapshot => {
+				const user = snapshot.val()
+				const recipeKeysObj = user.recipes
+				const recipeKeys = Object.values(recipeKeysObj);
+				Promise.all(recipeKeys.map( key => (db.ref(`recipes`).child(key).once('value')))).then(snapshot => (this._loadRecipeSuccess(snapshot, recipeKeys)))
+			})
+		} catch (e) {
+			console.log(e)
+		}
+	}
+
+	@action.bound
+	loadRecipeDetails(key) {
+		const db = firebase.database()
+		db.ref(`recipeDetails`).child(key).once('value').then(snapshot => {
+			this.loadRecipeDetailsSuccess(snapshot, key)
+		})
+	}
+
+	@action.bound
+	loadRecipeDetailsSuccess(snapshot, key) {
+		this.selectedRecipe = {
+			...this.recipes.get(key),
+			...snapshot.val()
+		}
+	}
+
+	static getInstance() {
+		if (instance === null) {
+			instance = new RecipesStore()
+		}
+		return instance
 	}
 
 }
 
-export default recipesStore
+export default RecipesStore
