@@ -15,14 +15,7 @@ class Home extends Component {
 
 	render() {
 		return(
-			<View>
-				<Text>Hello this is Home View!</Text>
-
-				<Button
-					onPress={() => this.props.navigation.goBack()}
-					title="Go back home"
-				/>
-			</View>
+			<Text style={{color: 'black'}}>Hello this is Home View!</Text>
 		)
 	}
 

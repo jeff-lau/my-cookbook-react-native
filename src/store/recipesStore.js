@@ -7,7 +7,7 @@ mobx.useStrict(true)
 var instance = null
 class RecipesStore {
 	@observable recipes = new Map()
-	@observable selectedRecipe = {}
+	@observable selectedRecipe = null
 
 	addRecipe(key, recipe) {
 		this.recipes[key] = recipe
